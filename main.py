@@ -19,6 +19,7 @@ import configparser
 
 import numpy as np
 import ExAssist as EA
+from fire import Fire
 
 from directprobe import utils
 from directprobe.config import Config
@@ -27,6 +28,7 @@ from directprobe.clusters import Cluster
 from directprobe.distanceQ import DistanceQ
 from directprobe.analyzer import Analyzer
 import directprobe.logconfig as cfg
+from directprobe.utils import pool_split
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +53,15 @@ def loading(
     # For debugging
     n = len(entities)
     # n = 200
-    annotations = [entities[i].Label for i in range(n)]
-    entities = [entities[i] for i in range(n)]
+    if config.seed:
+        np.random.seed(int(config.seed))
+
+    if config.subsample and config.subsample < n:
+        ids = np.random.choice(n, size=config.subsample, replace=False)
+    else:
+        ids = np.arange(n)
+    annotations = [entities[i].Label for i in ids]
+    entities = [entities[i] for i in ids]
 
     s = 'Finish loading {a} entities...'
     s = s.format(a=str(len(entities)))
@@ -67,10 +76,10 @@ def loading(
     embeddings_path = config.embeddings_path
     logger.info('Loading embeddings from ' + embeddings_path)
     embeddings = utils.load_embeddings(embeddings_path)
-    embeddings = embeddings[:n]
+    embeddings = embeddings[ids]
     logger.info('Finish loading embeddings...')
 
-    assert len(embeddings) == n
+    assert len(embeddings) == len(ids)
 
     annotations = np.array(annotations)
     labels = np.array(labels)
@@ -176,7 +185,12 @@ def prediction(config):
     logger.info('AverageConvexDistance={a}'.format(a=str(np.mean(diss))))
 
 
-def main():
+def main(
+        dataset: str = None,
+        embedding: str = None,
+        split: str = None,
+        #seed=(120, 220, 320, 420, 520),
+):
     assist = EA.getAssist('Probing')
 
     # Assist is used for developping experiments
@@ -186,6 +200,22 @@ def main():
     config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
     config.read('./config.ini', encoding='utf8')
+
+    if dataset is not None and embedding is not None:
+        split = split or pool_split(dataset)
+
+        output_path = f'results/{dataset}/{embedding}'
+        config.set('run', 'output_path', output_path)
+        config.set('clustering', 'probing_cluster_path', output_path)
+
+        data_dir = f'data/{dataset}'
+        config.set('data', 'common', data_dir)
+        config.set('data', 'label_set_path', f'{data_dir}/classes.txt')
+        config.set('data', 'entities_path', f'{data_dir}/train.csv')
+        config.set('data', 'test_entities_path', f'{data_dir}/test.csv')
+        representation_dir = f'data/representation/{dataset}'
+        config.set('data', 'embeddings_path', f'{representation_dir}/{split}_{embedding}.npy')
+        config.set('data', 'test_embeddings_path', f'{representation_dir}/test_{embedding}.npy')
 
     assist.set_config(config)
     with EA.start(assist) as assist:
@@ -201,4 +231,4 @@ def main():
 if __name__ == '__main__':
     # import cProfile
     # cProfile.run('main()', sort='cumulative')
-    main()
+    Fire(main)

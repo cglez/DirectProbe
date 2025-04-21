@@ -5,3 +5,4 @@ ExAssist
 joblib
 scikit-learn
 pandas
+fire

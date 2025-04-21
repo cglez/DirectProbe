@@ -14,6 +14,8 @@ Some utility functions, including loading and saving data.
 """
 
 import collections
+import glob
+import os
 from typing import List, Tuple, TextIO
 
 import numpy as np
@@ -172,3 +174,18 @@ def write_dis_inside_convex(
             s = '{a}: {b:.4f}\t{c:.4f}\n'
             s = s.format(a=str(tag), b=mean, c=std)
             f.write(s)
+
+
+def pool_split(dataset: str) -> str:
+    partitions = [os.path.basename(f).removesuffix('.csv')
+                  for f in glob.glob(f'data/{dataset}/*.csv')]
+
+    if 'test' in partitions:
+        partitions.remove('test')
+
+    for partition in ['train', 'dev', 'development'][::-1]:
+        if partition in partitions:
+            partitions.remove(partition)
+            partitions.insert(0, partition)
+
+    return '+'.join(partitions)

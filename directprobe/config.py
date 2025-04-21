@@ -53,3 +53,5 @@ class Config:
         self.label_set_path = config.label_set_path
         self.embeddings_path = config.embeddings_path
         self.test_embeddings_path = config.test_embeddings_path
+        self.subsample = int(config.subsample)
+        self.seed = int(config.seed) if config.seed else None
