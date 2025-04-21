@@ -17,6 +17,7 @@ import collections
 from typing import List, Tuple, TextIO
 
 import numpy as np
+import pandas as pd
 import torch
 
 from directprobe.distanceQ import DistanceQ
@@ -25,12 +26,16 @@ from directprobe.distanceQ import DistanceQ
 Pair = collections.namedtuple('Pair', ['Entity', 'Label'])
 
 
-def load_entities(path: TextIO):
-    reval = []
-    with open(path, encoding='utf8') as f:
-        for line in f:
-            s = line.strip().split('\t')
-            reval.append(Pair(*s))
+def load_entities(path: str):
+    if path.endswith('.csv'):
+        rows = pd.read_csv(path).to_dict(orient="records")
+        reval = [Pair(row['text'], str(row['label'])) for row in rows]
+    else:
+        reval = []
+        with open(path, encoding='utf8') as f:
+            for line in f:
+                s = line.strip().split('\t')
+                reval.append(Pair(*s))
     return reval
 
 
@@ -42,14 +47,11 @@ def load_labels(path: TextIO):
     return reval
 
 
-def load_embeddings(path: TextIO):
-    reval = []
-    with open(path, encoding='utf8') as f:
-        for line in f:
-            s = line.strip().split()
-            vec = [float(v) for v in s]
-            reval.append(vec)
-    return reval
+def load_embeddings(path: str):
+    if path.endswith('.npy'):
+        return np.load(path)
+    else:
+        return np.loadtxt(path)
 
 
 def write_predictions(
