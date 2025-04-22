@@ -187,9 +187,9 @@ def prediction(config):
 
 def main(
         dataset: str = None,
-        embedding: str = None,
-        split: str = None,
-        #seed=(120, 220, 320, 420, 520),
+        embedding: str = '',
+        split: str = '',
+        seed='120,220,320,420,520',
 ):
     assist = EA.getAssist('Probing')
 
@@ -201,8 +201,12 @@ def main(
             interpolation=configparser.ExtendedInterpolation())
     config.read('./config.ini', encoding='utf8')
 
-    if dataset is not None and embedding is not None:
+    if dataset is not None:
+        embeddings = embedding.split(',')
+        if not embeddings:
+            raise ValueError('No embeddings provided.')
         split = split or pool_split(dataset)
+        seeds = seed.split(',') if isinstance(seed, str) else seed
 
         output_path = f'results/{dataset}/{embedding}'
         config.set('run', 'output_path', output_path)
@@ -214,18 +218,34 @@ def main(
         config.set('data', 'entities_path', f'{data_dir}/train.csv')
         config.set('data', 'test_entities_path', f'{data_dir}/test.csv')
         representation_dir = f'data/representation/{dataset}'
-        config.set('data', 'embeddings_path', f'{representation_dir}/{split}_{embedding}.npy')
-        config.set('data', 'test_embeddings_path', f'{representation_dir}/test_{embedding}.npy')
 
-    assist.set_config(config)
-    with EA.start(assist) as assist:
-        config = Config(assist.config)
-        cfg.set_log_path(config.log_path)
-        logging.config.dictConfig(cfg.LOGGING_CONFIG)
-        if config.mode == 'prediction':
-            prediction(config)
-        elif config.mode == 'probing':
-            probe(config)
+        for emb in embeddings:
+            config.set('data', 'embeddings_path', f'{representation_dir}/{split}_{emb}.npy')
+            config.set('data', 'test_embeddings_path', f'{representation_dir}/test_{emb}.npy')
+
+            for seed_ in seeds:
+                config.set('data', 'seed', seed_)
+
+                assist.set_config(config)
+                with EA.start(assist) as assist:
+                    config = Config(assist.config)
+                    cfg.set_log_path(config.log_path)
+                    logging.config.dictConfig(cfg.LOGGING_CONFIG)
+                    if config.mode == 'prediction':
+                        prediction(config)
+                    elif config.mode == 'probing':
+                        probe(config)
+
+    else:
+        assist.set_config(config)
+        with EA.start(assist) as assist:
+            config = Config(assist.config)
+            cfg.set_log_path(config.log_path)
+            logging.config.dictConfig(cfg.LOGGING_CONFIG)
+            if config.mode == 'prediction':
+                prediction(config)
+            elif config.mode == 'probing':
+                probe(config)
 
 
 if __name__ == '__main__':
