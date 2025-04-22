@@ -37,15 +37,14 @@ class Config:
 
     def _get_runpath(self, config):
         output_path = Path(config.output_path)
-        if not output_path.exists():
-            output_path.mkdir(parents=True)
-        else:
-            if len(list(output_path.iterdir())) != 0:
-                raise Exception('The results directory is non-empty!')
         self.cluster_path = output_path / 'clusters.txt'
         self.log_path = output_path / 'log.txt'
         self.prediction_path = output_path / 'prediction.txt'
         self.dis_path = output_path / 'dis.txt'
+        if not self.prediction_path.exists():
+            output_path.mkdir(parents=True, exist_ok=True)
+        else:
+            raise Exception('The results directory is non-empty!')
 
     def _get_data(self, config):
         self.entities_path = config.entities_path
