@@ -17,8 +17,6 @@ import torch
 import numpy as np
 from joblib import Parallel, delayed
 # from scipy.spatial import distance
-import gurobipy as gp
-from gurobipy import GRB
 # from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 
@@ -42,15 +40,13 @@ class Space:
         If gurobi is valid, we will use gurobi to solve a LP problem.
         Otherwise, a hard svm will be used to find the hyperplane.
         """
-        s1 = ('Gurobi is NOT found in the system, '
-              'we will use sklearn.SCV instead.')
-        s2 = ('Gurobi IS found in the system, we will use Gurobi.')
         try:
+            import gurobipy as gp
             gp.Model("lp")
-            logger.info(s2)
+            logger.info('Gurobi IS found in the system, we will use Gurobi.')
             return Space.lp
         except Exception:
-            logger.info(s1)
+            logger.info('Gurobi is NOT found in the system, we will use sklearn.SCV instead.')
             return Space.hardSVM
 
     @staticmethod
@@ -223,6 +219,9 @@ class Space:
     def lp(X1: np.array, X2: np.array) -> int:
         """Return 1 when the LP problem is infeasible.
         """
+        import gurobipy as gp
+        from gurobipy import GRB
+
         m = X1.shape[1]
         model = gp.Model("lp")
 
