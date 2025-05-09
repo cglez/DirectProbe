@@ -228,13 +228,13 @@ def main(
 
                 assist.set_config(config)
                 with EA.start(assist) as assist:
-                    config = Config(assist.config)
-                    cfg.set_log_path(config.log_path)
+                    assist_cfg = Config(assist.config)
+                    cfg.set_log_path(assist_cfg.log_path)
                     logging.config.dictConfig(cfg.LOGGING_CONFIG)
-                    if config.mode == 'prediction':
-                        prediction(config)
-                    elif config.mode == 'probing':
-                        probe(config)
+                    if assist_cfg.mode == 'prediction':
+                        prediction(assist_cfg)
+                    elif assist_cfg.mode == 'probing':
+                        probe(assist_cfg)
 
     else:
         assist.set_config(config)
